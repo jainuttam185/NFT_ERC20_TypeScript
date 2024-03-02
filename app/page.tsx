@@ -1,95 +1,173 @@
-import Image from "next/image";
+"use client";
 import styles from "./page.module.css";
+import React, { Component } from "react";
+import { ethers } from "ethers";
+import Pooll from "../artifacts/contracts/Pool.sol/Pool.json";
+import ERC200 from "../artifacts/contracts/ERC20.sol/ERC20.json";
+import { Pool__factory, ERC20__factory, ERC20, Pool, } from "../typechain-types";
 
-export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
+interface IState{
+    token: string;
+    outputValue: string;
+    reserveIn: number;
+    reserveOut: number;
+    contract: Pool;
+    Token1Contract: ERC20;
+    Token2Contract: ERC20;
+    Provider: string;
+    contractAddress: string;
+    Token1Address: string;
+    Token2Address: string;
+}
+
+class CampaignIndex extends Component {
+  state = {
+    token: "",
+    outputValue: "",
+    reserveIn: 0,
+    reserveOut: 0,
+    Provider: "",
+    contractAddress: "0x101aA514319aD89260e33035fabaEe042f15B0d5",
+    Token1Address: "0x1928496a8E34967F02eAF527Fe8A4EaC2EA8E646",
+    Token2Address: "0x84933aD21c5e47d390061877ad7B149e042dB983",
+  } as IState;
+
+  async componentDidMount() {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+
+    if (provider) {
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      //setAccount(address);
+      // const contractAddress = "0xcC680Ce60E640F8BEF955AC5fDe00F4700DC97D3";
+      console.log(provider);
+      const contract = new ethers.Contract(
+        this.state.contractAddress,
+        Pooll.abi,
+        signer
+      );
+      const Token1Contract = new ethers.Contract(
+        this.state.Token1Address,
+        ERC200.abi,
+        signer
+      );
+      const Token2Contract = new ethers.Contract(
+        this.state.Token2Address,
+        ERC200.abi,
+        signer
+      );
+      //this.setState.contract=contract;
+      this.setState({
+        contract: contract,
+      });
+      this.setState({
+        Token1Contract: Token1Contract,
+      });
+      this.setState({
+        Token2Contract: Token2Contract,
+      });
+      console.log("line11");
+      this.setState({
+        Provider: signer,
+      });
+      // this.setState.Token1Contract=Token1Contract;
+      // this.setState.Token2Contract=Token2Contract;
+      // this.setState.Provider=signer;
+      this.setState({
+        reserveOut: await contract.reserve1(),
+      });
+      this.setState({
+        reserveIn: await contract.reserve0(),
+      });
+      
+      // this.setState.reserveOut = await contract.reserve1();
+      // console.log("line1", this.state.reserveIn);
+      //   console.log("line2", this.state.reserveOut);
+
+    } else {
+      alert("Metamask is not installed.");
+    }
+
+    // this.setState({
+    //   reserveIn: await contract.reserve0()
+    // });
+    // this.setState({
+    //   reserveOut: await contract.reserve1()
+    // });
+    // this.setState.reserveOut = await contract.reserve1();
+    // console.log("line1", parseInt(this.state.reserveIn));
+    // console.log("line2", parseInt(this.state.reserveOut));
+  }
+  onSubmit = async (event : React.MouseEvent<HTMLElement>) => {
+    console.log(this.state.contract);
+    event.preventDefault();
+    const approve = await this.state.Token2Contract.approve(
+      this.state.contractAddress,
+      this.state.token
+    );
+    await approve.wait();
+    const swap = await this.state.contract.swap(
+      this.state.Token2Address,
+      this.state.token
+    );
+    await swap.wait();
+  };
+
+  /* static async getIntialProps(){
+
+      onSubmit=async (event)=>{
+           event.preventDefault();
+
+           const accounts=await web3.eth.getAccounts();
+           await factory.methods.swap(this.state.token)
+           .send({
+               from : accounts[0]
+           });
+      };
+   }*/
+  render() {
+    return (
+      <div className={styles.full}>
+        <div className={styles.header}>
+          <h2 className={styles.header2}>UTTAM SWAP</h2>
+        </div>
+        <div className={styles.top}>
+          <div className={styles.box}>
+            <div className={styles.token1}>Token 2</div>
+            <input
+              type="number"
+              className={styles.input1}
+              placeholder="0"
+              value={this.state.token}
+              onChange={(event) =>
+                this.setState({
+                  token: event.target.value,
+                  outputValue:
+                    (Number(this.state.reserveOut) * Number(event.target.value) * 1.13) / Number(this.state.reserveIn),
+                })
+              }
             />
-          </a>
+            <div className={styles.token1}>Token 1</div>
+            <div className={styles.buttondiv}>
+              <input
+                type="number"
+                className={styles.input2}
+                placeholder="0"
+                value={this.state.outputValue}
+                readOnly
+              />
+              <div>
+                <button className={styles.button} onClick={this.onSubmit}>
+                  Swap
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+    );
+  }
 }
+
+export default CampaignIndex;
